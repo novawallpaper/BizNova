@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>BizNova — AI Business Suite</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+
+    <!-- Google Identity Services (Sign in with Google) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- jsPDF: client-side GST invoice PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Chart.js: analytics charts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="app-container" id="app-container">
+      <!-- ========================= -->
+      <!-- LOGIN GATE -->
+      <!-- ========================= -->
+
+      <div id="login-gate" class="login-gate">
+        <div class="login-bg-grid" id="login-bg-grid"></div>
+
+        <div class="login-gate-fade"></div>
+
+        <div class="login-content">
+          <div class="login-app-icon">BN</div>
+          <h1 class="login-app-name">BizNova</h1>
+          <p class="login-tagline">AI-powered billing, inventory &amp; business management — built for India.</p>
+          <p class="login-by">By BizNova Technologies.</p>
+
+          <div id="google-signin-btn-gate" class="login-google-slot"></div>
+
+          <button id="google-fallback-btn" class="login-google-fallback" onclick="handleFallbackGoogleClick()">
+            <i class="fa-brands fa-google"></i>
+            Continue with Google
+          </button>
+
+          <p id="signin-status" class="signin-status">Demo mode — tap above to sign in</p>
+
+          <p class="login-terms">
+            By continuing, you agree to our
+            <a href="#" onclick="return false;">Terms of Service</a>
+            and
+            <a href="#" onclick="return false;">Privacy Policy</a>
+          </p>
+
+          <div id="debug-log" class="debug-log"></div>
+        </div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- DASHBOARD SCREEN (was Categories) -->
+      <!-- ========================= -->
+
+      <div id="screen-categories" class="screen-content active">
+        <div class="greeting-row">
+          <div>
+            <h1 id="dashboard-greeting">Good day 👋</h1>
+            <p id="dashboard-bizname">My Business</p>
+          </div>
+          <div class="biz-switcher" onclick="openBizSwitcher()">
+            <i class="fa-solid fa-building"></i> <span id="biz-switcher-label">Switch</span>
+          </div>
+        </div>
+
+        <div class="kpi-grid" id="kpi-grid"></div>
+
+        <p class="category-subtitle">Quick access to your business modules</p>
+
+        <div class="carousel-container" id="collection-carousel"></div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- MODULE LIST SCREEN (was Category Detail) -->
+      <!-- ========================= -->
+
+      <div id="screen-category-detail" class="screen-content">
+        <div class="cat-detail-header">
+          <div class="back-btn" onclick="switchTab('categories', document.getElementById('nav-categories'))">
+            <i class="fa-solid fa-chevron-left"></i>
+          </div>
+          <h1 id="cat-detail-title">Module</h1>
+          <button class="cat-unlock-btn" id="cat-detail-add-btn" onclick="openAddEditor()">
+            <i class="fa-solid fa-plus"></i> Add
+          </button>
+        </div>
+
+        <div class="cat-tabs" id="cat-detail-tabs"></div>
+
+        <div id="cat-detail-grid"></div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- ADD / EDIT FORM SCREEN (was Wallpaper Editor) -->
+      <!-- ========================= -->
+
+      <div id="screen-editor" class="screen-content editor-screen">
+        <div class="editor-header">
+          <div class="back-btn" onclick="closeEditorScreen()">
+            <i class="fa-solid fa-chevron-left"></i>
+          </div>
+          <h1 id="editor-title">Add Item</h1>
+          <div class="editor-fav-btn" id="editor-fav-btn" onclick="toggleFavoriteEditor()">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <button class="editor-apply-btn" onclick="saveEditorRecord()">Save</button>
+        </div>
+
+        <div class="editor-preview-wrap" id="editor-preview-wrap">
+          <div class="editor-phone-mock" style="height:170px;">
+            <div class="editor-preview-img" id="editor-preview-img" style="background:linear-gradient(135deg,#4c8dff,#7c5cff);"></div>
+            <div class="editor-preview-overlay">
+              <div class="editor-preview-date" id="editor-preview-date">Live preview</div>
+              <div class="editor-preview-clock" id="editor-preview-clock" style="font-size:20px;">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-maintabs" id="editor-maintabs"></div>
+
+        <div class="editor-panel" id="editor-panel"></div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- PRODUCT / GLOBAL SEARCH SCREEN (was Explore) -->
+      <!-- ========================= -->
+
+      <div id="screen-explore" class="screen-content">
+        <div class="explore-header">
+          <h1 id="explore-title">Product Search</h1>
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="Search products, customers, invoices..." oninput="renderSearch()" />
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+        </div>
+
+        <div class="sub-categories-bar">
+          <div class="sub-cat-item active" data-filter="all" onclick="switchSubCat(this)">
+            <i class="fa-solid fa-border-all"></i>
+            <span class="sub-cat-text">All</span>
+          </div>
+          <div class="sub-cat-item" data-filter="products" onclick="switchSubCat(this)">
+            <i class="fa-solid fa-box"></i>
+            <span class="sub-cat-text">Products</span>
+          </div>
+          <div class="sub-cat-item" data-filter="customers" onclick="switchSubCat(this)">
+            <i class="fa-solid fa-users"></i>
+            <span class="sub-cat-text">Customers</span>
+          </div>
+          <div class="sub-cat-item" data-filter="lowstock" onclick="switchSubCat(this)">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span class="sub-cat-text">Low Stock</span>
+          </div>
+          <div class="sub-cat-item" data-filter="topcustomers" onclick="switchSubCat(this)">
+            <i class="fa-solid fa-crown"></i>
+            <span class="sub-cat-text">Top</span>
+          </div>
+          <div class="sub-cat-item" data-filter="invoices" onclick="switchSubCat(this)">
+            <i class="fa-solid fa-file-invoice"></i>
+            <span class="sub-cat-text">Invoices</span>
+          </div>
+        </div>
+
+        <div id="wallpaper-grid-container"></div>
+
+        <div class="fab-heart" onclick="quickAddCustomer()" title="Quick add customer">
+          <i class="fa-solid fa-user-plus"></i>
+        </div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- INVOICES HUB SCREEN (was Request) -->
+      <!-- ========================= -->
+
+      <div id="screen-request" class="screen-content">
+        <div class="page-header">
+          <h1>Invoices</h1>
+        </div>
+
+        <div class="custom-card">
+          <div class="custom-card-header">
+            <h3>GST Invoice Generator</h3>
+            <div class="sparkle-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          </div>
+          <h2>Create Invoice</h2>
+          <p>Add items, auto-calculate GST, generate a professional PDF and share instantly via WhatsApp or Email.</p>
+          <div class="privacy-info">
+            <i class="fa-solid fa-lock"></i>
+            <span>Private • Only visible to your business</span>
+          </div>
+          <div class="pricing-row">
+            <div class="price-tag" style="font-size:15px;">Included in <span style="font-size: 12px; font-weight: 400; opacity: 0.8">every plan</span></div>
+            <button class="order-btn" onclick="openOrderScreen()">Create Invoice</button>
+          </div>
+        </div>
+
+        <div class="section-title">Recent Invoices</div>
+        <div id="samples-grid" class="data-list"></div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- NEW INVOICE BUILDER SCREEN (was Order Wallpaper) -->
+      <!-- ========================= -->
+
+      <div id="screen-order" class="screen-content">
+        <div class="page-header">
+          <div class="back-btn" onclick="switchTab('request', document.getElementById('nav-request'))">
+            <i class="fa-solid fa-chevron-left"></i>
+          </div>
+          <h1>New GST Invoice</h1>
+        </div>
+
+        <div class="order-info-card">
+          <h3>How it works</h3>
+          <div class="order-step">
+            <div class="order-step-num">1</div>
+            <div class="order-step-text"><h4>Pick customer &amp; items</h4><p>Choose a customer and add products with quantity.</p></div>
+          </div>
+          <div class="order-step">
+            <div class="order-step-num">2</div>
+            <div class="order-step-text"><h4>Auto GST calculation</h4><p>CGST/SGST or IGST is calculated automatically per item.</p></div>
+          </div>
+          <div class="order-step">
+            <div class="order-step-num">3</div>
+            <div class="order-step-text"><h4>Generate PDF</h4><p>A professional GST invoice PDF is generated instantly.</p></div>
+          </div>
+          <div class="order-step">
+            <div class="order-step-num">4</div>
+            <div class="order-step-text"><h4>Send it</h4><p>Share the invoice via WhatsApp or Email in one tap.</p></div>
+          </div>
+        </div>
+
+        <div class="order-req-card">
+          <h3>Invoice Details</h3>
+
+          <div class="field-row">
+            <label>Customer</label>
+            <select id="invoice-customer-select"></select>
+          </div>
+
+          <div class="field-row-2col">
+            <div class="field-row">
+              <label>Invoice Date</label>
+              <input type="date" id="invoice-date" />
+            </div>
+            <div class="field-row">
+              <label>GST Type</label>
+              <select id="invoice-gst-type">
+                <option value="intra">CGST + SGST (Intra-state)</option>
+                <option value="inter">IGST (Inter-state)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top:10px;">Items</div>
+          <div id="invoice-items-container"></div>
+          <button class="invoice-add-item-btn" onclick="addInvoiceItemRow()"><i class="fa-solid fa-plus"></i> Add Item</button>
+
+          <div class="invoice-totals" id="invoice-totals"></div>
+        </div>
+
+        <div class="section-title">Notes / Terms (Optional)</div>
+        <textarea class="order-message-box" id="order-message" placeholder="Payment terms, bank details, thank-you note..."></textarea>
+
+        <button class="order-pay-btn ready" id="order-pay-btn" onclick="submitOrderPayment()">Generate Invoice PDF</button>
+
+        <div class="invoice-share-row" id="invoice-share-row" style="display:none; margin-top:14px;">
+          <button class="invoice-share-btn whatsapp" onclick="shareInvoiceWhatsapp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+          <button class="invoice-share-btn email" onclick="shareInvoiceEmail()"><i class="fa-solid fa-envelope"></i> Email</button>
+        </div>
+
+        <p class="order-disclaimer">GST invoices are generated locally as a PDF. WhatsApp / Email sending requires connecting the WhatsApp Business API and an email provider in Settings.</p>
+      </div>
+
+      <!-- ========================= -->
+      <!-- SUBSCRIPTION SCREEN (was Premium) -->
+      <!-- ========================= -->
+
+      <div id="screen-premium" class="screen-content">
+        <div class="back-btn" style="margin-bottom: 10px;" onclick="closePremiumScreen()">
+          <i class="fa-solid fa-chevron-left"></i>
+        </div>
+
+        <div class="premium-hero"><i class="fa-solid fa-rocket"></i></div>
+
+        <div class="premium-title-block">
+          <h1>Upgrade Your Plan</h1>
+          <p>Unlock AI business tools, unlimited invoices &amp; higher limits</p>
+        </div>
+
+        <div class="premium-features-row">
+          <div class="premium-feature-card" onclick="openAiChat()">
+            <div class="premium-feature-icon"><i class="fa-solid fa-robot"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>AI Assistant</p>
+          </div>
+          <div class="premium-feature-card">
+            <div class="premium-feature-icon"><i class="fa-solid fa-chart-line"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Sales Analysis</p>
+          </div>
+          <div class="premium-feature-card">
+            <div class="premium-feature-icon"><i class="fa-solid fa-boxes-stacked"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Stock Prediction</p>
+          </div>
+          <div class="premium-feature-card">
+            <div class="premium-feature-icon"><i class="fa-solid fa-gauge-high"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Higher Limits</p>
+          </div>
+          <div class="premium-feature-card">
+            <div class="premium-feature-icon"><i class="fa-solid fa-headphones"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Priority Support</p>
+          </div>
+        </div>
+
+        <div class="section-title">Add-on</div>
+        <div class="collection-option selected" id="collection-turbo">
+          <div class="collection-radio"><i class="fa-solid fa-check"></i></div>
+          <div class="collection-option-text">
+            <h4>500 AI Credits Pack</h4>
+            <p>One-time top-up, never expires</p>
+          </div>
+          <div class="collection-price">₹299</div>
+          <button class="collection-explore-btn" onclick="event.stopPropagation(); buyCreditsPack()">Buy</button>
+        </div>
+
+        <div class="section-title">Choose a plan</div>
+
+        <div class="plan-option selected" data-plan="premium" data-amount="99900" onclick="selectPlan(this)">
+          <div class="plan-badge">Best value</div>
+          <div class="plan-radio"><i class="fa-solid fa-check"></i></div>
+          <div class="plan-option-text">
+            <h4>Premium — Yearly</h4>
+            <p>All AI features, unlimited invoices, multi-business</p>
+          </div>
+          <div class="plan-price-block">
+            <div class="plan-strike">₹1,999.00</div>
+            <div class="plan-price">₹999.00</div>
+            <div class="plan-save">Save 50%</div>
+          </div>
+        </div>
+
+        <div class="plan-option" data-plan="pro" data-amount="49900" onclick="selectPlan(this)">
+          <div class="plan-radio"></div>
+          <div class="plan-option-text">
+            <h4>Pro — Monthly</h4>
+            <p>AI assistant, CRM, GST invoicing</p>
+          </div>
+          <div class="plan-price-block">
+            <div class="plan-price">₹499.00</div>
+          </div>
+        </div>
+
+        <div class="plan-option" data-plan="free" data-amount="0" onclick="selectPlan(this)">
+          <div class="plan-radio"></div>
+          <div class="plan-option-text">
+            <h4>Free</h4>
+            <p>Basic billing &amp; inventory, limited AI credits</p>
+          </div>
+          <div class="plan-price-block">
+            <div class="plan-price">₹0</div>
+          </div>
+        </div>
+
+        <button class="premium-continue-btn" onclick="startPremiumUpgrade()">Upgrade Now</button>
+      </div>
+
+      <!-- ========================= -->
+      <!-- BUSINESS PROFILE / SETTINGS SCREEN -->
+      <!-- ========================= -->
+
+      <div id="screen-settings" class="screen-content">
+        <div class="page-header"><h1>Business Profile</h1></div>
+
+        <div class="profile-card" id="profile-signed-in">
+          <div class="profile-left">
+            <div class="avatar" id="profile-avatar">U</div>
+            <div>
+              <div class="profile-name" id="profile-name-text">Not signed in</div>
+              <div class="profile-email" id="profile-email-text"></div>
+              <div class="verified-badge" id="verified-badge" style="display:none;">
+                <i class="fa-solid fa-circle-check"></i> GST Verified
+              </div>
+            </div>
+          </div>
+          <i class="fa-solid fa-right-from-bracket logout-btn" onclick="signOutGoogle()"></i>
+        </div>
+
+        <div class="free-banner">
+          <div>
+            <h2 id="tier-label">Free</h2>
+            <p>Tap to unlock AI business tools</p>
+          </div>
+          <button class="upgrade-btn" onclick="openPremiumScreen()">Upgrade <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <div class="features-scroll">
+          <div class="feature-item" onclick="openPremiumScreen()">
+            <div class="feature-icon-wrapper"><i class="fa-solid fa-robot"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>AI Assistant</p>
+          </div>
+          <div class="feature-item" onclick="openPremiumScreen()">
+            <div class="feature-icon-wrapper"><i class="fa-solid fa-chart-line"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Sales Analysis</p>
+          </div>
+          <div class="feature-item" onclick="openPremiumScreen()">
+            <div class="feature-icon-wrapper"><i class="fa-solid fa-boxes-stacked"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Stock Prediction</p>
+          </div>
+          <div class="feature-item" onclick="openPremiumScreen()">
+            <div class="feature-icon-wrapper"><i class="fa-solid fa-gauge-high"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Higher Limits</p>
+          </div>
+          <div class="feature-item" onclick="openPremiumScreen()">
+            <div class="feature-icon-wrapper"><i class="fa-solid fa-headphones"></i><div class="lock-icon"><i class="fa-solid fa-lock"></i></div></div>
+            <p>Priority Support</p>
+          </div>
+        </div>
+
+        <div class="no-ads-card">
+          <div class="no-ads-icon"><i class="fa-solid fa-building"></i></div>
+          <div class="no-ads-info">
+            <h4>Multi-Business Support</h4>
+            <p>Manage more than one business from a single account</p>
+          </div>
+        </div>
+
+        <div class="limits-card">
+          <div class="limits-title-row">
+            <h3>AI Credit Usage</h3>
+            <span class="limits-tier" id="limits-tier-label">Tier: FREE</span>
+          </div>
+
+          <div class="limit-row">
+            <div class="limit-label"><span>Hourly AI calls</span><span id="hourly-label">0 / 10 used</span></div>
+            <div class="limit-bar"><div class="limit-progress" id="hourly-bar" style="width:0%"></div></div>
+          </div>
+          <div class="limit-row">
+            <div class="limit-label"><span>Daily AI calls</span><span id="daily-label">0 / 30 used</span></div>
+            <div class="limit-bar"><div class="limit-progress" id="daily-bar" style="width:0%"></div></div>
+          </div>
+
+          <div class="limits-btn-row">
+            <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+            <button class="limits-upgrade-btn" onclick="openPremiumScreen()">Upgrade</button>
+          </div>
+          <p class="limits-hint">Upgrade to Premium for higher AI limits</p>
+        </div>
+
+        <div class="settings-section-label">PREFERENCES</div>
+
+        <div class="settings-row" onclick="toggleSetting(this, 'darkmode')">
+          <div class="settings-row-icon"><i class="fa-solid fa-moon"></i></div>
+          <div class="settings-row-text">
+            <h4>Dark Mode</h4>
+            <p id="theme-desc">Light theme</p>
+          </div>
+          <div class="toggle-switch" id="toggle-darkmode"></div>
+        </div>
+
+        <div class="settings-row" onclick="openBizSwitcher()">
+          <div class="settings-row-icon"><i class="fa-solid fa-building"></i></div>
+          <div class="settings-row-text">
+            <h4>Switch Business</h4>
+            <p id="current-biz-desc">Manage another business you own</p>
+          </div>
+          <i class="fa-solid fa-chevron-right settings-row-arrow"></i>
+        </div>
+
+        <div class="settings-section-label">NOTIFICATIONS</div>
+
+        <div class="wallpaper-settings-card">
+          <h3>Notification Settings</h3>
+
+          <div class="ws-row">
+            <div class="ws-row-icon"><i class="fa-brands fa-whatsapp"></i></div>
+            <div class="ws-row-text">
+              <h4>WhatsApp Invoice Alerts</h4>
+              <p>Send invoice copies to customers via WhatsApp</p>
+            </div>
+            <div class="toggle-switch on" onclick="event.stopPropagation(); this.classList.toggle('on')"></div>
+          </div>
+
+          <div class="ws-row">
+            <div class="ws-row-icon"><i class="fa-solid fa-envelope"></i></div>
+            <div class="ws-row-text">
+              <h4>Email Notifications</h4>
+              <p>Payment reminders &amp; reports via email</p>
+            </div>
+            <div class="toggle-switch on" onclick="event.stopPropagation(); this.classList.toggle('on')"></div>
+          </div>
+
+          <div class="ws-row">
+            <div class="ws-row-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="ws-row-text">
+              <h4>Low Stock Alerts</h4>
+              <p>Get notified when inventory runs low</p>
+            </div>
+            <div class="toggle-switch on" onclick="event.stopPropagation(); this.classList.toggle('on')"></div>
+          </div>
+        </div>
+
+        <div class="settings-section-label">SUPPORT</div>
+
+        <div class="settings-row" onclick="contactSupportEmail()">
+          <div class="settings-row-icon"><i class="fa-solid fa-envelope"></i></div>
+          <div class="settings-row-text">
+            <h4>Email Support</h4>
+            <p>support@biznova.app</p>
+          </div>
+          <i class="fa-solid fa-chevron-right settings-row-arrow"></i>
+        </div>
+
+        <div class="settings-row" onclick="contactSupportTelegram()">
+          <div class="settings-row-icon"><i class="fa-brands fa-whatsapp"></i></div>
+          <div class="settings-row-text">
+            <h4>WhatsApp Support</h4>
+            <p>wa.me/91XXXXXXXXXX</p>
+          </div>
+          <i class="fa-solid fa-chevron-right settings-row-arrow"></i>
+        </div>
+      </div>
+
+      <!-- ========================= -->
+      <!-- Bottom Navigation -->
+      <!-- ========================= -->
+
+      <nav class="bottom-nav">
+        <div class="nav-item active" id="nav-categories" onclick="switchTab('categories', this)">
+          <div class="nav-icon-wrapper"><i class="fa-solid fa-gauge-high"></i></div>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item" id="nav-explore" onclick="switchTab('explore', this)">
+          <div class="nav-icon-wrapper"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <span>Search</span>
+        </div>
+        <div class="nav-item" id="nav-request" onclick="switchTab('request', this)">
+          <div class="nav-icon-wrapper"><i class="fa-solid fa-file-invoice"></i></div>
+          <span>Invoices</span>
+        </div>
+        <div class="nav-item" id="nav-settings" onclick="switchTab('settings', this)">
+          <div class="nav-icon-wrapper"><i class="fa-solid fa-user"></i></div>
+          <span>Profile</span>
+        </div>
+      </nav>
+
+      <!-- Quick-view Modal (was Wallpaper Preview Modal) -->
+      <div id="wallpaper-modal" class="wallpaper-modal">
+        <div id="modal-preview-bg" class="modal-preview-bg" style="background:linear-gradient(135deg,#4c8dff,#7c5cff);"></div>
+        <h2 id="modal-wallpaper-title"></h2>
+        <div class="modal-fav-btn" id="modal-fav-btn" onclick="toggleFavoriteModal()"><i class="fa-solid fa-star"></i></div>
+        <button id="modal-download-action">Edit</button>
+        <button id="modal-set-action">View Details</button>
+      </div>
+
+      <!-- AI credit gate sheet (was Unlock choice sheet) -->
+      <div id="unlock-sheet-overlay" class="unlock-sheet-overlay">
+        <div class="unlock-sheet">
+          <div class="unlock-sheet-close" onclick="closeUnlockSheet()"><i class="fa-solid fa-xmark"></i></div>
+          <div class="unlock-sheet-icon"><i class="fa-solid fa-bolt"></i></div>
+          <h2>AI Feature Locked</h2>
+          <p>Choose how you'd like to continue:</p>
+
+          <button class="unlock-option" onclick="chooseUnlockPremium()">
+            <div class="unlock-option-icon"><i class="fa-solid fa-rocket"></i></div>
+            <div class="unlock-option-text">
+              <h4>Upgrade to Pro / Premium</h4>
+              <p>Unlimited AI credits — see plans</p>
+            </div>
+          </button>
+
+          <button class="unlock-option" id="unlock-ad-btn" onclick="chooseUnlockAd()">
+            <div class="unlock-option-icon ad"><i class="fa-solid fa-gift"></i></div>
+            <div class="unlock-option-text">
+              <h4>Use 1 free AI credit</h4>
+              <p id="unlock-ad-desc">Free — used 0 / 3 today</p>
+            </div>
+          </button>
+
+          <button class="unlock-maybe-later" onclick="closeUnlockSheet()">Maybe later</button>
+        </div>
+      </div>
+
+      <!-- AI generating overlay (was rewarded-ad overlay) -->
+      <div id="ad-overlay" class="ad-overlay">
+        <div class="ad-overlay-icon"></div>
+        <h3>Generating AI insight…</h3>
+        <p>Analyzing your business data</p>
+        <div class="ad-overlay-timer" id="ad-overlay-timer">3</div>
+      </div>
+
+      <!-- AI Assistant Chat -->
+      <div class="ai-fab" onclick="openAiChat()" title="AI Business Assistant">
+        <i class="fa-solid fa-sparkles"></i>
+      </div>
+      <div id="ai-chat-overlay" class="ai-chat-overlay">
+        <div class="ai-chat-panel">
+          <div class="ai-chat-header">
+            <div class="ai-chat-header-icon"><i class="fa-solid fa-robot"></i></div>
+            <div>
+              <h3>AI Business Assistant</h3>
+              <p>Ask about sales, stock, expenses &amp; more</p>
+            </div>
+            <div class="ai-chat-close" onclick="closeAiChat()"><i class="fa-solid fa-xmark"></i></div>
+          </div>
+          <div class="ai-chat-messages" id="ai-chat-messages"></div>
+          <div class="ai-suggest-chips" id="ai-suggest-chips"></div>
+          <div class="ai-chat-input-row">
+            <input type="text" id="ai-chat-input" placeholder="Ask your AI assistant..." onkeydown="if(event.key==='Enter') sendAiMessage();" />
+            <button class="ai-chat-send" onclick="sendAiMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Business switcher sheet -->
+      <div id="biz-switcher-overlay" class="unlock-sheet-overlay">
+        <div class="unlock-sheet" style="justify-content:flex-start; padding-top:70px;">
+          <div class="unlock-sheet-close" onclick="closeBizSwitcher()"><i class="fa-solid fa-xmark"></i></div>
+          <div class="unlock-sheet-icon"><i class="fa-solid fa-building"></i></div>
+          <h2>Your Businesses</h2>
+          <p>Switch between businesses you manage</p>
+          <div id="biz-list"></div>
+          <button class="unlock-option" onclick="createNewBusiness()">
+            <div class="unlock-option-icon"><i class="fa-solid fa-plus"></i></div>
+            <div class="unlock-option-text">
+              <h4>Add New Business</h4>
+              <p>Create another business profile</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div id="app-toast" class="toast"></div>
+    </div>
+
+    <!-- Razorpay Checkout SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script src="script.js"></script>
+  </body>
+</html>
